@@ -1,0 +1,26 @@
+FROM ruby:2.6.3
+LABEL maintainer="Vito Sartori <vito@montant.co>"
+
+RUN apt-get update && apt-get install --force-yes -y \
+    build-essential \
+    imagemagick \
+    locales \
+    libpq-dev \
+&& rm -rf /var/lib/apt/lists/*
+
+RUN locale-gen en_US.UTF-8
+ENV NODEJS_VERSION="v10.15.0"
+ENV NODEJS_DOWNLOAD_URL="https://nodejs.org/dist/$NODEJS_VERSION/node-$NODEJS_VERSION-linux-x64.tar.xz"
+ENV NODEJS_SHASUM="https://nodejs.org/dist/$NODEJS_VERSION/SHASUMS256.txt.asc"
+ADD $NODEJS_DOWNLOAD_URL /tmp/node-$NODEJS_VERSION-linux-x64.tar.xz
+ADD $NODEJS_SHASUM /tmp/SHA256SUMS.txt.asc
+RUN cd /tmp && sha256sum -c SHA256SUMS.txt.asc 2>&1 | grep OK
+RUN mkdir /usr/local/lib/nodejs
+RUN cd /tmp && tar -xJf node-$NODEJS_VERSION-linux-x64.tar.xz -C /usr/local/lib/nodejs
+RUN mv /usr/local/lib/nodejs/node-$NODEJS_VERSION-linux-x64 /usr/local/lib/nodejs/node-$NODEJS_VERSION
+RUN update-alternatives --install /usr/bin/npm      npm /usr/local/lib/nodejs/node-$NODEJS_VERSION/lib/node_modules/npm/bin/npm-cli.js  10
+RUN update-alternatives --install /usr/bin/nodejs   nodejs /usr/local/lib/nodejs/node-$NODEJS_VERSION/bin/node                          10
+RUN update-alternatives --install /usr/bin/node     node /usr/local/lib/nodejs/node-$NODEJS_VERSION/bin/node                            10
+RUN curl -o- -L https://yarnpkg.com/install.sh | bash
+RUN rm -rfv node-$NODEJS_VERSION-linux-x64.tar.xz
+ENV PATH="${PATH}:/root/.yarn/bin"
